@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  wp:
+    image: wordpress:latest
+    ports:
+      - ${PORT}:80 # change ip if required
+    volumes:
+      - ./config/wp_php.ini:/usr/local/etc/php/conf.d/conf.ini
+      - ./wp-app:/var/www/html # Full wordpress project
+      #- ./plugin-name/trunk/:/var/www/html/wp-content/plugins/plugin-name # Plugin development
+      #- ./theme-name/trunk/:/var/www/html/wp-content/themes/theme-name # Theme development
+    environment:
+      WORDPRESS_DB_HOST: "${DB_HOST}"
+      WORDPRESS_DB_NAME: "${DB_NAME}"
+      WORDPRESS_DB_USER: "${DB_USER}"
+      WORDPRESS_DB_PASSWORD: "${DB_PASSWORD}"
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  wpcli:
+    image: wordpress:cli
+    volumes:
+      - ./config/wp_php.ini:/usr/local/etc/php/conf.d/conf.ini
+      - ./wp-app:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: "${DB_HOST}"
+      WORDPRESS_DB_NAME: "${DB_NAME}"
+      WORDPRESS_DB_USER: "${DB_USER}"
+      WORDPRESS_DB_PASSWORD: "${DB_PASSWORD}"
+    command: >
+      wp core install
+    entrypoint: sh -c "wp db create && wp core install --url=http://localhost:${PORT} --title=${SITE_NAME} --admin_user=admin --admin_password=admin --admin_email=test@example.com && wp plugin install woocommerce --activate"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - wp
